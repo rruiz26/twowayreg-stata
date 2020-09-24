@@ -26,7 +26,7 @@ This command runs the whole algorithm. The syntaxis is as follows:
 
 Command is an estimation command, e.g., reg, ivreg, sureg, etc. 
 The varlist contains the dependent variable followed by the independent variables. The syntaxis of the varlist replicates the syntaxis of the original command.
-The code creates and store some matrices that can be used later. Adding `using` followed by a path will save a set of matrices in that path. Otherwise, the matrices will be saved in `eresults`. STATA may throw an error if it tries to store a matrix that exceeds `matsize` in ereturn. Adding `using` avoids that limitation.
+The code creates and stores some matrices that can be used later. Adding `using` followed by a path will save a set of matrices in that path. Otherwise, the matrices will be saved in `eresults`. STATA may throw an error if it tries to store a matrix that exceeds `matsize` in ereturn. Adding `using` avoids that limitation.
 The two levels of fixed effects are specified in the `absorb` option. The absorb option takes at least two variables with group identifiers. The optional third input can be a variable containing analytic weights. 
 If the group identifiers are not consecutive after dropping redundants and missing observations, then you have the option `generate()` to create new group identifiers.
 
@@ -96,7 +96,7 @@ If a missing value exist in one of the variables projected there will be an erro
 ```
 
 After running `twset` you can save the resulting projection matrices in a folder to use them later.
-The comand `twsave` will complete this task and the command `twload` load the matrices saved previously. Both of them can be followed by `using` to select the path where the matrices will be saved. If using option is ommited the arrays will we stored in the current directory.
+The comand `twsave` will complete this task and the command `twload` load the matrices saved previously. Both of them can be followed by `using` to select the path where the matrices will be saved. If `using` option is ommited the arrays will we stored in the current directory.
 ```
 .twsave using "../folder/x"
 ....
