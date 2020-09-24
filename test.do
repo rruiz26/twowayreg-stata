@@ -56,6 +56,7 @@ Absorbed degrees of freedom:
 
 twfem reg dist mean_np, absorb(month_year zip_pat) newv(w_) vce(robust)
 //no observations 
+//r(2000) why?
 
 //twfem reg w_y w_x1, noproj vce(cluster hhid)
 //twfem ivregress 2sls w_y w_x1 (w_x2= w_x3), noproj vce(robust)
