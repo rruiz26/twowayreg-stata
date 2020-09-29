@@ -140,6 +140,9 @@ if (save_to_e>0){
 //save the scalars and matrices the current directory or in the path selected
 else
 {
+	saveMat(root,"twoWayVar1", newid)
+	saveMat(root,"twoWayVar2", newt)
+	saveMat(root,"twoWayW",w)
 	saveMat(root,"twoWayN1", N)
 	saveMat(root,"twoWayN2", T)
 	saveMat(root,"twoWayinvDD", invDD)
@@ -151,7 +154,7 @@ if (N<T)
         
         CinvHHDH=diagprod(invHH,DH')
 		A=invsym(diagminus(DD,CinvHHDH'*DH'))
-		corection_rank= N-rank(A)
+		correction_rank= N-rank(A)
         B=-A*CinvHHDH'
 		//save the matrices in eresults
 		if (save_to_e>0){
@@ -164,6 +167,9 @@ if (N<T)
 			saveMat(root,"twoWayCinvHHDH", CinvHHDH)
 			saveMat(root,"twoWayA", A)
 			saveMat(root,"twoWayB", B)
+			saveMat(root,"twoWayCorrection",correction_rank)
+
+
 		}		
 			
 		
@@ -172,7 +178,7 @@ if (N<T)
 	{
         AinvDDDH=diagprod(invDD,DH)
 		C=invsym((diagminus(HH,AinvDDDH'*DH)))
-		corection_rank= T-rank(C)
+		correction_rank= T-rank(C)
         B=-AinvDDDH*C
 
 		//save the matrices in eresults
@@ -187,13 +193,17 @@ if (N<T)
 			saveMat(root,"twoWayAinvDDDH", AinvDDDH)
 			saveMat(root,"twoWayC", C)
 			saveMat(root,"twoWayB", B)
+			saveMat(root,"twoWayCorrection",correction_rank)
+
+
 		}		
 			
 
 		
     }
 //save the scalar in eresults	
-st_numscalar("e(rank_adj)",corection_rank)
+	st_numscalar("e(rank_adj)",correction_rank)
+
  }
  
  end
@@ -255,23 +265,11 @@ gettoken twoway_t twoway_w: aux
 	*if generate option is omitted there is no creation of extra fixed effects consecutives
 	capt assert inlist( "`generate'", "")
 	if !_rc { 
-		sort `twoway_id' `twoway_t'
-		qui{
-			tempvar check1
-			gen `check1'=`twoway_id'[_n]-`twoway_id'[_n-1]
-			replace `check1'=1 if _n==1
-			capture assert `check1'<=1 
-			local rc = _rc
-		}
-		if `rc'{
-			di "{err} The fixed effects indices are not consecutive integers. Please, use the option gen to generate consecutive variables." 
-			exit `rc'
-		}
-		
+		di "{err} Warning in twfem/twset: generate option not detected. The program may be slower or crash if fixed effects indices are not consecutive integers." 
 		tempvar var1 var2
 		local var1  "`twoway_id'"
 		local var2  "`twoway_t'"
-	}
+	} 
 	else{
 		*if the fixed effects are not consecutive the user has to create new variables to be used to create D matrix
 		qui{

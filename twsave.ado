@@ -1,7 +1,7 @@
 capture program drop twsave
 capture mata mata drop matasave()
 
-findfile twset 
+findfile twres.ado
 include "`r(fn)'"
 
 mata

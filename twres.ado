@@ -1,99 +1,25 @@
-capture program drop twres 
-capture mata mata drop sparse()
-capture mata mata drop excludemissing()
-capture mata mata drop proddiag()
-capture mata mata drop diagprod()
-capture mata mata drop diagminus()
+capture program drop twres
 capture mata mata drop projVar()
-capture mata mata drop saveMat()
-capture mata mata drop readMat()
+capture mata mata drop microMataLoad()
 
-//Mata programs:
+findfile twset.ado
+include "`r(fn)'"
 
+mata 
+void microMataLoad()
+{
+	string scalar newid,newt, w, root
+	root =st_local("using")
+	w = readMat(root,"twoWayW")
+	var1= readMat(root,"twoWayVar1")
+	var2= readMat(root,"twoWayVar2")
+	st_local("var1",var1)
+	st_local("var2",var2)
+	st_local("w",w)
+}
+end
 
-mata:
-real matrix sparse(real matrix x)
- {
-  real matrix y
-  real scalar k
- 
-  y = J(colmax(x[,1]),colmax(x[,2]),0) 
-  for (k=1; k<=rows(x); k++) {
-    y[x[k,1],x[k,2]] = y[x[k,1],x[k,2]] + x[k,3]
-  }
- 
-  return(y)
- }
- 
-  //sparse matrix function ends
-  
-
- // multiplying a diagonal matrix represented by a vector times a matrix.
- // Diag*A multiplies each rows.
- real matrix diagprod(real colvector x, real matrix A)
- {
-  real matrix y
-  real scalar k
-  if(rows(x)<cols(x)) x = x'
- 
-  y = J(rows(A),cols(A),0)
-  for (k=1; k<=rows(x); k++) {
-    y[k,] = A[k,] * x[k,1]
-  }
- 
-  return(y)
- }
- 
-   matrix readMat(string s,string n)
- {
-  matrix X
-  real scalar fh
-fh = fopen(s+"_"+n, "r")
-X = fgetmatrix(fh)
-fclose(fh)
-return(X)
- }
- 
- 
-  
- void saveMat(string s,string n,matrix X)
- {
-  real scalar fh
-fh = fopen(s + "_" + n, "rw")
-fputmatrix(fh, X)
-fclose(fh)
- }
- 
- 
-  real matrix proddiag(real matrix A,real colvector x)
- {
-  real matrix y
-  real scalar k
-  if(rows(x)<cols(x)) x = x'
- 
-  y = J(rows(A),cols(A),0)
-  for (k=1; k<=rows(x); k++) {
-    y[,k] = A[,k] * x[k,1]
-  }
- 
-  return(y)
- }
- 
-   real matrix diagminus(real colvector x,real matrix A)
- {
-  //real matrix y
-  real scalar k
-  if(rows(x)<cols(x)) x = x'
- 
-  //y = -A
-  for (k=1; k<=rows(x); k++) {
-    A[k,k] = A[k,k] - x[k,1]
-  }
- 
-  return(-A)
- }
- 
-
+mata
 void projVar()
 {
 	real matrix V, varIn, D,aux,delta,tau,varOut,A,B,CinvHHDH,AinvDDDH,C
@@ -106,10 +32,11 @@ void projVar()
 	newvar = st_local("newvar")
 	var1 = st_local("var1")
 	var2 = st_local("var2")
-	
 	w=st_local("w")
+
 	sampleVarName = st_local("touse_proj")
 	linear_index = st_local("linear_index")
+
 	V = st_data(.,(var1, var2,currvar),sampleVarName)
 	varIn=V[.,3]
 	
@@ -120,26 +47,31 @@ void projVar()
 	else {
 	D = st_data(.,(var1, var2,w),sampleVarName)
 	}
-	
+		
 	V[.,3]=V[.,3]:*D[.,3]
 	aux=sparse(V)
 	Dy=rowsum(aux)
 	Dy=Dy
 	Ty=colsum(aux)
 	Ty=Ty[1,1..cols(aux)-1]'
-	N=st_numscalar("e(dimN)")
-	T=st_numscalar("e(dimT)")
-	correction_rank=st_numscalar("e(rank_adj)")
+
 	//load the matrices from eresults
 	if (save_to_e>0){
-		
+		N=st_numscalar("e(dimN)")
+		T=st_numscalar("e(dimT)")
+		correction_rank=st_numscalar("e(rank_adj)")
 		B=st_matrix("e(B)")
 	}
 	else{
 		//load the matrices from using option
 		N=readMat(root,"twoWayN1")
 		T=readMat(root,"twoWayN2")
+		correction_rank=readMat(root,"twoWayCorrection")
 		B=readMat(root,"twoWayB")
+		st_numscalar("e(dimN)",N)
+		st_numscalar("e(dimT)",T)
+		st_numscalar("e(rank_adj)",correction_rank)
+		
 	}
 
 	 if (N<T)
@@ -177,12 +109,11 @@ void projVar()
 	st_store(st_data(.,linear_index,sampleVarName), newvar, varOut)
 
 }
-
- end
- 
+end
 
 
-program define twres, nclass
+
+program define twres, eclass
 version 11
 syntax varlist [using/], [Prefix(name)] [REPLACE]
 
@@ -209,7 +140,6 @@ foreach currvar of varlist `varlist'{
     _fv_check_depvar `depvar'
     fvexpand `indepvars' 
 	
-	
 	qui{
 		
 	tempvar touse_proj touse_check linear_index
@@ -227,39 +157,50 @@ foreach currvar of varlist `varlist'{
 	   exit `rc'
 	}
 	drop `touse_check'
-	
-	*check if e() has not been rewritten
-	capt confirm scalar e(dimN)
-	if _rc { 
-	   di "{err} The e() has been rewritten, please run twset again."
-	   exit
-	}
+
 	
 	*check that there is using in the command or not.
 	capt assert inlist( "`using/'", "")
-	if !_rc {    
-		scalar save_to_e=1
-			*save in scalars and arrays the macros.
-			scalar dimN= e(dimN)
-			scalar dimT= e(dimT)
-			scalar rank_adj=e(rank_adj)
-			matrix invDD=e(invDD)
-			matrix invHH=e(invHH)
-			if (dimN<dimT){
-				matrix CinvHHDH=e(CinvHHDH)
-				matrix A= e(A)
-				matrix B=e(B)
-				}
-			else{
-				matrix AinvDDDH=e(AinvDDDH)
-				matrix C= e(C)
-				matrix B=e(B)
-				}
-		
-		}
+	if !_rc { 
+			*check if e() has not been rewritten
+			capt confirm scalar e(dimN)
+			if _rc { 
+				di "{err} The e() has been rewritten, please run twset again."
+				exit
+			}
+			scalar save_to_e=1
+			}
 	else{
 		scalar save_to_e=0
+		mata microMataLoad()
+		gettoken twoway_id: var1
+		gettoken twoway_t: var2
+		gettoken twoway_w: w
+
+		qui{
+			tempvar touse_proj touse_proj2 touse_proj3
+			mark `touse_proj2' `if' `in'
+			markout `touse_proj2' `twoway_id' `twoway_t' `twoway_w'	
+			*Discard the observations with negative weights
+			if !("`twoway_w'"==""){
+				replace `twoway_w' = . if `twoway_w'<=0
+				replace `touse_proj2' = 0 if `twoway_w' == .
+				}
+
+			tempvar touse_set2
+			nonredundants `twoway_id' `twoway_t' if `touse_proj2', gen(`touse_proj')
+			}
+		  gen `touse_proj3'=`touse_proj2'
+		  ereturn post, esample(`touse_proj3')
+		  ereturn local absorb "`var1' `var2' `twoway_w'"
+		  ereturn scalar dimN= e(dimN)
+		  ereturn scalar dimT= e(dimT)
+		  ereturn scalar rank_adj=e(rank_adj)
+
 		}
+
+	
+
 	*variable created to store only the observations that are non-missings and in that way the arrays are conformables
 	gen `linear_index' = _n	
 	
