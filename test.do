@@ -54,9 +54,24 @@ Absorbed degrees of freedom:
 
 
 
-twfem reg dist mean_np, absorb(month_year zip_pat) newv(w_) vce(robust)
-//no observations 
-//r(2000) why?
+twfem reg dist mean_np, absorb(month_year zip_pat) newv(w_) vce(robust) generate(month_year_c zip_pat_c)
+/*
+
+Linear regression                               Number of obs     =     15,084
+                                                F(1, 15083)       =       0.10
+                                                Prob > F          =     0.7464
+                                                R-squared         =     0.0000
+                                                Root MSE          =     .88909
+
+------------------------------------------------------------------------------
+             |               Robust
+      w_dist |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+ w_mean_np_5 |  -.0001264   .0004015    -0.31   0.753    -.0009133    .0006606
+------------------------------------------------------------------------------
+
+*/
+
 
 //twfem reg w_y w_x1, noproj vce(cluster hhid)
 //twfem ivregress 2sls w_y w_x1 (w_x2= w_x3), noproj vce(robust)
